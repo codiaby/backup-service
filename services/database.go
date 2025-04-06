@@ -12,9 +12,11 @@ import (
 func BackupDatabase(db shared.DatabaseConfig, backupFile string) error {
 	var cmd *exec.Cmd
 	if db.Type == "mysql" {
-		cmd = exec.Command("mysqldump", "-u", db.User, "-p"+db.Password, db.Name)
+		// Commande MySQL avec l'adresse du serveur
+		cmd = exec.Command("mysqldump", "-h", db.Address, "-u", db.User, "-p"+db.Password, db.Name)
 	} else if db.Type == "postgresql" {
-		cmd = exec.Command("pg_dump", "-U", db.User, "-d", db.Name)
+		// Commande PostgreSQL avec l'adresse du serveur
+		cmd = exec.Command("pg_dump", "-h", db.Address, "-U", db.User, "-d", db.Name)
 		os.Setenv("PGPASSWORD", db.Password)
 	} else {
 		return fmt.Errorf("Type de base de données non pris en charge : %s", db.Type)

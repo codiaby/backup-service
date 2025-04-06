@@ -1,0 +1,12 @@
+databases: []
+files: []
+backup:
+  directory: ""
+  retention_days: 7
+  max_concurrency: 3
+  enable_cleanup: false
+server:
+  address: ""
+  user: ""
+  password: ""
+schedule: "0 0 * * *"

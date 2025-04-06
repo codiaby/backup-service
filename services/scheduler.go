@@ -19,6 +19,7 @@ type Config struct {
 		Directory      string `yaml:"directory"`
 		RetentionDays  int    `yaml:"retention_days"`
 		MaxConcurrency int    `yaml:"max_concurrency"`
+		EnableCleanup  bool   `yaml:"enable_cleanup"`
 	} `yaml:"backup"`
 	Server   shared.ServerConfig `yaml:"server"`
 	Schedule string              `yaml:"schedule"`
@@ -68,11 +69,29 @@ func loadConfig(filePath string) (*Config, error) {
 
 // Effectue les sauvegardes et les transferts
 func performBackup(config *Config) {
+	backupDir := config.Backup.Directory
+	if backupDir == "" {
+		log.Println("Le champ `directory` est vide, utilisation du répertoire par défaut : ./backup/")
+		backupDir = "./backup/"
+	}
+
+	if _, err := os.Stat(backupDir); os.IsNotExist(err) {
+		err := os.MkdirAll(backupDir, os.ModePerm)
+		if err != nil {
+			log.Fatalf("Erreur lors de la création du répertoire de sauvegarde : %v", err)
+			return
+		}
+	}
+
+	if len(config.Databases) == 0 && len(config.Files) == 0 {
+		log.Println("Aucune base de données ou fichier configuré pour la sauvegarde. Fin du processus.")
+		return
+	}
+
 	maxConcurrency := config.Backup.MaxConcurrency
 	semaphore := make(chan struct{}, maxConcurrency)
 	var wg sync.WaitGroup
 
-	// Sauvegarder les bases de données (si configurées)
 	if len(config.Databases) > 0 {
 		log.Println("Sauvegarde des bases de données...")
 		for _, db := range config.Databases {
@@ -83,10 +102,15 @@ func performBackup(config *Config) {
 				defer func() { <-semaphore }()
 
 				timestamp := time.Now().Format("20060102_150405")
-				backupFile := config.Backup.Directory + db.Name + "_" + timestamp + ".sql"
+				backupFile := backupDir + db.Name + "_" + timestamp + ".sql"
 
 				if err := BackupDatabase(db, backupFile); err != nil {
-					log.Printf("Erreur lors de la sauvegarde de %s : %v", db.Name, err)
+					log.Printf("Erreur lors de la sauvegarde de %s (adresse : %s) : %v", db.Name, db.Address, err)
+					return
+				}
+
+				if config.Server.Address == "" || config.Server.User == "" || config.Server.Password == "" {
+					log.Printf("Configuration SSH distante absente. Sauvegarde conservée en local : %s", backupFile)
 					return
 				}
 
@@ -102,11 +126,13 @@ func performBackup(config *Config) {
 				}
 			}(db)
 		}
+	} else {
+		log.Println("Aucune base de données configurée. Sauvegarde ignorée.")
 	}
 
-	// Archiver et envoyer les fichiers locaux (si configurés)
+	// Archiver et envoyer les fichiers locaux en parallèle avec des goroutines (si configurés)
 	if len(config.Files) > 0 {
-		log.Println("Archivage et transfert des fichiers...")
+		log.Println("Archivage des fichiers locaux...")
 		for _, file := range config.Files {
 			wg.Add(1)
 			go func(file shared.FileConfig) {
@@ -115,12 +141,20 @@ func performBackup(config *Config) {
 				defer func() { <-semaphore }()
 
 				timestamp := time.Now().Format("20060102_150405")
-				archivePath := config.Backup.Directory + "archive_" + timestamp + ".zip"
+				archivePath := backupDir + "archive_" + timestamp + ".zip"
+
 				if err := ArchiveFiles([]string{file.Path}, archivePath); err != nil {
 					log.Printf("Erreur lors de l'archivage des fichiers : %v", err)
 					return
 				}
 
+				// Vérification des paramètres SSH
+				if config.Server.Address == "" || config.Server.User == "" || config.Server.Password == "" {
+					log.Printf("Configuration SSH distante absente. Archive conservée en local : %s", archivePath)
+					return
+				}
+
+				// Envoi vers le serveur distant
 				if err := UploadToServer(shared.ServerConfig{
 					Address:         config.Server.Address,
 					User:            config.Server.User,
@@ -133,15 +167,25 @@ func performBackup(config *Config) {
 				}
 			}(file)
 		}
+	} else {
+		log.Println("Aucun fichier configuré pour l'archivage. Archivage ignoré.")
 	}
 
+	// Attendre que toutes les tâches soient terminées
 	wg.Wait()
-	log.Println("Toutes les sauvegardes et les transferts sont terminés.")
 
-	// Nettoyage des fichiers anciens
-	log.Println("Nettoyage des fichiers anciens...")
-	err := CleanupOldBackups(config.Backup.Directory, config.Backup.RetentionDays)
-	if err != nil {
-		log.Printf("Erreur lors du nettoyage des fichiers anciens : %v", err)
+	// Nettoyage uniquement s'il y a eu des sauvegardes ou archivages
+	if len(config.Databases) > 0 || len(config.Files) > 0 {
+		if config.Backup.EnableCleanup {
+			log.Println("Nettoyage des fichiers anciens...")
+			err := CleanupOldBackups(backupDir, config.Backup.RetentionDays)
+			if err != nil {
+				log.Printf("Erreur lors du nettoyage des fichiers anciens : %v", err)
+			}
+		} else {
+			log.Println("Nettoyage des fichiers anciens ignoré (désactivé dans la configuration).")
+		}
+	} else {
+		log.Println("Aucune sauvegarde ou fichier archivé. Nettoyage ignoré.")
 	}
 }

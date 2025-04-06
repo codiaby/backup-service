@@ -1,27 +1,31 @@
 # Configuration de l'outil de sauvegarde
 # Ce fichier YAML définit les paramètres de connexion pour les bases de données,
 databases:
-  - name: "base_de_donnees_mysql"
-    type: "mysql"
-    user: "utilisateur_mysql"
-    password: "motdepasse_mysql"
-    remote_directory: "/remote/mysql_backups/"
-  - name: "base_de_donnees_postgres"
+  - name: "base_de_donnees_mysql"       # Nom de la base de données MySQL
+    type: "mysql"                      # Type de base de données (mysql ou postgresql)
+    user: "utilisateur_mysql"          # Nom d'utilisateur pour la base de données
+    password: "motdepasse_mysql"       # Mot de passe pour la base de données
+    address: "192.168.1.10"            # Adresse ou nom d'hôte du serveur de base de données
+    remote_directory: "/remote/mysql_backups/" # Répertoire distant pour l'envoi
+  - name: "base_de_donnees_postgres"   # Nom de la base de données PostgreSQL
     type: "postgresql"
     user: "utilisateur_pgsql"
     password: "motdepasse_pgsql"
+    address: "192.168.1.20"
     remote_directory: "/remote/postgresql_backups/"
 files:
-  - path: "/chemin/vers/fichier1.txt"
+  - path: "/chemin/vers/fichier1.txt"  # Fichier local à sauvegarder
     remote_directory: "/remote/files/"
-  - path: "/chemin/vers/repertoire/"
+  - path: "/chemin/vers/repertoire/"   # Répertoire local à sauvegarder
     remote_directory: "/remote/directories/"
 backup:
-  directory: "/chemin/vers/sauvegardes/"
-  retention_days: 7
-  max_concurrency: 3
+  directory: "/chemin/vers/sauvegardes/" # Répertoire local pour stocker les sauvegardes
+  retention_days: 7                      # Nombre de jours avant la suppression des anciens fichiers
+  max_concurrency: 3                     # Nombre maximum de tâches parallèles
+  enable_cleanup: true                   # Active/désactive la suppression des fichiers anciens
 server:
-  address: "example.com:22"
-  user: "utilisateur"
-  password: "motdepasse"
-schedule: "0 0 * * *" # Planification au format cron (par ex: minuit chaque jour)
+  address: "example.com:22"             # Adresse du serveur distant (SFTP)
+  user: "utilisateur"                   # Nom d'utilisateur pour le serveur distant
+  password: "motdepasse"                # Mot de passe pour le serveur distant
+schedule: "0 0 * * *"                   # Planification au format cron
+

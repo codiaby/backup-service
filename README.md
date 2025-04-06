@@ -1,6 +1,20 @@
 # Backup Service
 
-Ce projet est un service de sauvegarde automatique pour plusieurs bases de données (MySQL et PostgreSQL). Il peut être exécuté en tant que service planifié avec `cron` et gère l'envoi des sauvegardes vers un serveur distant via SFTP.
+Backup Service est une application Go permettant de sauvegarder des bases de données et des fichiers locaux, avec des options de transfert vers un serveur distant via SFTP. Elle inclut également une planification `cron` et une gestion des fichiers anciens.
+
+## Fonctionnalités
+
+- **Bases de données** :
+  - Sauvegarde des bases de données MySQL et PostgreSQL.
+  - Connexion aux serveurs via adresse (nom d'hôte ou IP).
+- **Fichiers locaux** :
+  - Archivage et transfert des fichiers/dossiers locaux.
+- **Planification** :
+  - Sauvegardes automatiques basées sur un horaire configuré.
+- **Nettoyage** :
+  - Option de suppression automatique des anciens fichiers après un certain nombre de jours.
+- **Transfert SFTP** :
+  - Envoi des sauvegardes vers un serveur distant (facultatif).
 
 ## Structure du Projet
 
@@ -25,6 +39,14 @@ backup-service/
 ├── README.md                   # Documentation du projet
 
 ```
+
+## Prérequis
+
+1. **Go** : Version 1.19 ou supérieure.
+2. **Commandes externes** :
+   - `mysqldump` pour les bases de données MySQL.
+   - `pg_dump` pour les bases de données PostgreSQL.
+3. **Dépendances Go** : Installez les dépendances via `go mod tidy`.
 
 ## Installation
 
@@ -107,9 +129,52 @@ sudo systemctl status backup-service
 
 ### En mode manuel :
 
-Lancez le programme avec :
+#### Lancer le Service
+
+Lancez le service avec le fichier de configuration spécifié :
 ```bash
 ./backup-service -C config/config.yaml
+```
+#### Exécution Immédiate
+
+Pour exécuter immédiatement sans planification, utilisez le drapeau --run-now :
+```bash
+./backup-service --run-now -C config/config.yaml
+```
+
+## Exemple de Configuration
+
+Voici un exemple de configuration pour `config.yaml` :
+```yaml
+databases:
+  - name: "example_db"
+    type: "mysql"
+    user: "root"
+    password: "example_password"
+    address: "localhost"
+    remote_directory: "/remote/mysql_backups/"
+files:
+  - path: "/path/to/local/file.txt"
+    remote_directory: "/remote/files/"
+backup:
+  directory: "/local/backups/"
+  retention_days: 7
+  max_concurrency: 3
+  enable_cleanup: true
+server:
+  address: "sftp.example.com:22"
+  user: "example_user"
+  password: "example_password"
+schedule: "0 3 * * *"
+```
+
+## Nettoyage des Fichiers Anciens
+
+La suppression des fichiers anciens est contrôlée par le champ `enable_cleanup`. Par défaut, elle est activée (`true`). Pour désactiver cette option, modifiez la configuration YAML :
+
+```yaml
+backup:
+  enable_cleanup: false
 ```
 
 ## Journalisation
