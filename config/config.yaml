@@ -1,0 +1,27 @@
+# Configuration de l'outil de sauvegarde
+# Ce fichier YAML définit les paramètres de connexion pour les bases de données,
+databases:
+  - name: "base_de_donnees_mysql"
+    type: "mysql"
+    user: "utilisateur_mysql"
+    password: "motdepasse_mysql"
+    remote_directory: "/remote/mysql_backups/"
+  - name: "base_de_donnees_postgres"
+    type: "postgresql"
+    user: "utilisateur_pgsql"
+    password: "motdepasse_pgsql"
+    remote_directory: "/remote/postgresql_backups/"
+files:
+  - path: "/chemin/vers/fichier1.txt"
+    remote_directory: "/remote/files/"
+  - path: "/chemin/vers/repertoire/"
+    remote_directory: "/remote/directories/"
+backup:
+  directory: "/chemin/vers/sauvegardes/"
+  retention_days: 7
+  max_concurrency: 3
+server:
+  address: "example.com:22"
+  user: "utilisateur"
+  password: "motdepasse"
+schedule: "0 0 * * *" # Planification au format cron (par ex: minuit chaque jour)
