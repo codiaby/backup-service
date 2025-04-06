@@ -7,11 +7,6 @@ import (
 	"path/filepath"
 )
 
-type FileConfig struct {
-	Path            string `yaml:"path"`
-	RemoteDirectory string `yaml:"remote_directory"`
-}
-
 func ArchiveFiles(filePaths []string, archivePath string) error {
 	archiveFile, err := os.Create(archivePath)
 	if err != nil {
@@ -37,7 +32,6 @@ func addToArchive(zipWriter *zip.Writer, filePath string) error {
 		return err
 	}
 
-	// Si le chemin est un répertoire, parcourir les fichiers
 	if info.IsDir() {
 		return filepath.Walk(filePath, func(path string, info os.FileInfo, err error) error {
 			if err != nil {

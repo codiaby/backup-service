@@ -1,19 +1,21 @@
 package main
 
 import (
-	"backup-service/services"
 	"flag"
 	"log"
+
+	"github.com/codiaby/backup-service/services"
 )
 
 func main() {
-	// Option pour le chemin du fichier de configuration
+	// Options pour le chemin de configuration et exécution immédiate
 	configPath := flag.String("C", "config/config.yaml", "Chemin du fichier de configuration YAML")
 	flag.StringVar(configPath, "config", "config/config.yaml", "Chemin du fichier de configuration YAML (long format)")
+	runNow := flag.Bool("run-now", false, "Exécuter immédiatement les sauvegardes sans planification")
 	flag.Parse()
 
 	// Démarrage du service principal
-	err := services.StartBackupService(*configPath)
+	err := services.StartBackupService(*configPath, *runNow)
 	if err != nil {
 		log.Fatalf("Erreur lors du démarrage du service : %v", err)
 	}

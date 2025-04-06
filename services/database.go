@@ -5,17 +5,11 @@ import (
 	"fmt"
 	"os"
 	"os/exec"
+
+	"github.com/codiaby/backup-service/shared"
 )
 
-type DatabaseConfig struct {
-	Name            string `yaml:"name"`
-	Type            string `yaml:"type"`
-	User            string `yaml:"user"`
-	Password        string `yaml:"password"`
-	RemoteDirectory string `yaml:"remote_directory"`
-}
-
-func BackupDatabase(db DatabaseConfig, backupFile string) error {
+func BackupDatabase(db shared.DatabaseConfig, backupFile string) error {
 	var cmd *exec.Cmd
 	if db.Type == "mysql" {
 		cmd = exec.Command("mysqldump", "-u", db.User, "-p"+db.Password, db.Name)
