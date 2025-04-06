@@ -18,6 +18,8 @@ backup-service/
 │   ├── sftp.go                 # Gestion des transferts SFTP
 │   ├── scheduler.go            # Gestionnaire de planification et multitâches
 │   ├── cleanup.go              # Suppression des fichiers anciens
+├── shared/
+│   └── config.go               # Structures partagées
 ├── go.mod                      # Dépendances Go
 ├── go.sum                      # Sommes de contrôle des dépendances
 ├── README.md                   # Documentation du projet
